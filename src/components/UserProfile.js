@@ -10,25 +10,34 @@ const UserProfile = () => {
   const [saveMessage, setSaveMessage] = useState('');
 
   // Handle saving preferences
+  // In your handleSavePreferences function
   const handleSavePreferences = async () => {
-    if (!token) return;
+    if (!token) {
+      setSaveMessage('You must be logged in to save preferences');
+      return;
+    }
     
     setIsSaving(true);
     setSaveMessage('');
     
     try {
-      const result = await saveUserPreferences(preferences, token);
+      // Make sure this matches exactly what worked in Postman
+      const preferencesPayload = {
+        preferences: preferences
+      };
+      
+      const result = await saveUserPreferences(preferencesPayload, token);
+      
       if (result.success) {
         setSaveMessage('Preferences saved successfully!');
-        // Update local preferences with saved values
-        updatePreferences(result.preferences);
+        // Update local preferences with saved values if returned
+        updatePreferences(result.preferences || preferences);
         
-        // Clear success message after 3 seconds
         setTimeout(() => {
           setSaveMessage('');
         }, 3000);
       } else {
-        setSaveMessage(`Error: ${result.error || 'Failed to save preferences'}`);
+        setSaveMessage(`Error: ${result.message || 'Failed to save preferences'}`);
       }
     } catch (err) {
       setSaveMessage('Error saving preferences. Please try again.');
