@@ -10,7 +10,6 @@ const UserProfile = () => {
   const [saveMessage, setSaveMessage] = useState('');
 
   // Handle saving preferences
-  // In your handleSavePreferences function
   const handleSavePreferences = async () => {
     if (!token) {
       setSaveMessage('You must be logged in to save preferences');
@@ -20,28 +19,44 @@ const UserProfile = () => {
     setIsSaving(true);
     setSaveMessage('');
     
+    // Try refreshing the token first
     try {
-      // Make sure this matches exactly what worked in Postman
-      const preferencesPayload = {
+      // If you have a refresh token endpoint
+      const refreshResult = await refreshUserToken(token);
+      if (refreshResult.success) {
+        // Update token in your auth context
+        updateToken(refreshResult.token);
+      }
+    } catch (err) {
+      console.error('Token refresh failed:', err);
+      // Continue with existing token
+    }
+    
+    // Then proceed with the save
+    try {
+      const result = await saveUserPreferences({
         preferences: preferences
-      };
-      
-      const result = await saveUserPreferences(preferencesPayload, token);
+      }, token);
       
       if (result.success) {
         setSaveMessage('Preferences saved successfully!');
-        // Update local preferences with saved values if returned
-        updatePreferences(result.preferences || preferences);
+        updatePreferences(result.preferences);
         
         setTimeout(() => {
           setSaveMessage('');
         }, 3000);
       } else {
+        // Show the specific error from the backend
         setSaveMessage(`Error: ${result.message || 'Failed to save preferences'}`);
+        
+        // If user not found, suggest logging out and back in
+        if (result.message && result.message.includes('User not found')) {
+          setSaveMessage('Error: Session expired. Please log out and log back in.');
+        }
       }
     } catch (err) {
+      console.error('Save error:', err);
       setSaveMessage('Error saving preferences. Please try again.');
-      console.error('Error saving preferences:', err);
     } finally {
       setIsSaving(false);
     }
