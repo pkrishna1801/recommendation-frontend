@@ -17,6 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [preferences, setPreferences] = useState({
     category_preferences: [],
     price_range: { min: null, max: null },
@@ -54,21 +55,16 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, [token]);
 
-  // Register function
+  // Register function - modified to not automatically log in
   const register = async (username, email, password) => {
     setLoading(true);
     setError(null);
+    setRegistrationSuccess(false);
     try {
       const response = await registerUser(username, email, password);
       if (response.success) {
-        setUser(response.user);
-        setToken(response.token);
-        localStorage.setItem('token', response.token);
-        
-        // Set initial preferences if available
-        if (response.user.preferences) {
-          setPreferences(response.user.preferences);
-        }
+        // Instead of setting user and token, just set a success flag
+        setRegistrationSuccess(true);
       } else {
         setError(response.error || 'Registration failed');
       }
@@ -120,6 +116,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
   };
 
+  // Clear registration success
+  const clearRegistrationSuccess = () => {
+    setRegistrationSuccess(false);
+  };
+
   // Update preferences
   const updatePreferences = (newPreferences) => {
     setPreferences(prevPreferences => ({
@@ -136,10 +137,12 @@ export const AuthProvider = ({ children }) => {
     error,
     preferences,
     isAuthenticated: !!user,
+    registrationSuccess,
     login,
     register,
     logout,
-    updatePreferences
+    updatePreferences,
+    clearRegistrationSuccess
   };
 
   return (
